@@ -1,0 +1,297 @@
+---
+title: "PCOS Sentiment Analysis"
+author: "Aditi Gajjar"
+date: "1/27/2022"
+output:
+  rmarkdown::html_document:
+    theme: paper
+---
+# Introduction
+The idea for the topic of this project came from a personal experience I had at the doctor’s office--being diagnosed with Polycystic Ovarian Syndrome (PCOS). 
+
+When my doctor diagnosed me with PCOS, I was instructed to lose weight. Dealing with the diagnosis and the burden of needing to lose weight was a stressful experience for me, and I found myself with a lack of mental health resources to cope. Research shows that about 10% of women suffer from this condition, which made me wonder what others' attitudes were towards having to lose weight.
+
+The internet has become a hub for sharing information and exchanging advice conveniently and anonymously. Forums such as Reddit provide a platform for people to share experiences and learn from others experiences. Using public posts on Reddit, I wanted to explore attitudes towards PCOS diagnoses, particularly pertaining to weight and body image, to gauge a need for better mental health support from medical professionals when diagnosing PCOS.
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, include = FALSE)
+```
+
+Data Story:
+The first step was to scrape the data from Reddit. To do this, I used the Reddit API, a safe, convenient, and legal method to extract data from the website. Note that each topic within Reddit is referred to as “subreddit,” which are usually linked to Reddit pages where members discuss and post within the realm of the topic. Within a subreddit, users can post using a tag, called a “flair,” to organize the categories of discussions that are relevant to each other. Using Python and guidance from this article, I was able to extract the posts that had a flair of “weight” within the PCOS subreddit. The rest of the research utilized R.
+
+There were 248 posts total in the weight flair of the PCOS subreddit on January 21, 2022, and I was able to scrape all of them. The variables of interest I kept were ID (as opposed to a username for the account that posted), number of comments, the title of the post, the body or text of the post, a URL to the post, number of upvotes, the top comment, and the creation date. Upon an initial glance, it looked like many posts used emojis, SMS style-talk, and misspelling. However, given the large amount of working data I had, I chose to sacrifice the few instances where those words would influence my final analysis.
+
+```{r}
+library (tidyverse)
+library(here)
+library(tm)
+library(tidytext)
+data <- read_csv(here("reddit_raw.csv")) %>%
+  rename(post = X1)
+```
+## Data Exploration
+
+Once I imported the dataset into R, I needed to clean the data. To do this, I split the post’s body into separate words and removed the “stop words” or extra words that don’t convey any emotions. I used the R stop words dataset and an antijoin function to remove these words.
+
+```{r}
+df <- data %>%
+  select(Body, post) %>%
+  drop_na()
+df$Body <- str_remove_all(df$Body, '"') %>%
+  removePunctuation() %>%
+  tolower() 
+df <- df %>%
+  as_tibble()
+```
+
+
+```{r}
+df$Body <- str_split(df$Body, " +")
+```
+
+```{r}
+df2 <- unchop(df, Body) %>%
+  rename(word = Body)
+```
+
+```{r}
+df2$word <- str_squish(df2$word)
+```
+
+
+```{r}
+# remove stop words
+data(stop_words)
+df3 <- anti_join(df2, stop_words, by = c("word"))
+```
+
+```{r}
+df3$word <- str_replace_all(df3$word, '“', "") %>%
+  str_replace_all("”", "") %>%
+  str_replace_all('’', "")
+
+df3 <- drop_na(df3)
+```
+
+```{r}
+df3$word <- removeNumbers(df3$word) %>%
+  str_trim()
+```
+
+```{r}
+words <- df3 %>%
+  filter(str_detect(word, pattern = "[:alnum:]"))
+```
+
+For the actual sentiment analysis itself, there were two main methods I chose to explore: NIRC and Afinn. NRC sentiment analysis resulted in exact sentiments in the form of words, such as “joy,” and “positive,” or “negative.” On the other hand, Afinn sentiment analysis would result in a number system with the more negative a word, the more negative a sentiment, and the more positive the number, the more positive.
+
+**NRC: In-depth look at sentiment**
+For the NRC sentiment analysis, I split the body of each of the posts and found the sentient of each separate word. It’s important to note that sometimes repeat words had different sentiments. After finding separate sentiments, I grouped by the post number and then found the most common sentiment and summarized that as the overall sentiment of the post (Figure 2.1). For all the posts, the most common sentiments were positive and negative with 33% positive and 38% negative.
+
+```{r}
+nrc <- get_sentiments("nrc")
+```
+
+```{r}
+sentiments_nrc <- words %>%
+  inner_join(nrc)
+sentiments_nrc <- rename(sentiments_nrc)
+#Note: it seems to assign multiple emotions to one word; also, "eat" is always positive
+```
+
+
+
+```{r}
+nrc_pt1 <- sentiments_nrc %>%
+  group_by(post) %>%
+  count(sentiment) %>%
+  slice(which.max(n))
+```
+
+
+```{r, include=TRUE}
+nrc_pt1 %>%
+  count(sentiment) %>%
+  ggplot(aes(sentiment)) +
+  geom_bar()+
+  ggtitle("Sentiment Count by Post", subtitle = "Represents most common sentiment per post") +
+  ylab("Number of posts") +
+  xlab("Sentiment") +
+  ggthemes::theme_fivethirtyeight()
+```
+```{r}
+neg_posts <- nrc_pt1 %>%
+  filter(sentiment == "negative") %>%
+  count() %>%
+  pull() %>%
+  sum()
+
+total_posts <-nrc_pt1 %>%
+  count() %>%
+  pull() %>%
+  sum()
+
+
+neg_posts / total_posts
+```
+
+```{r}
+pos_posts <- nrc_pt1 %>%
+  filter(sentiment == "positive") %>%
+  count() %>%
+  pull() %>%
+  sum()
+
+pos_posts / total_posts
+```
+
+```{r}
+ant_posts <- nrc_pt1 %>%
+  filter(sentiment == "anticipation") %>%
+  count() %>%
+  pull() %>%
+  sum()
+
+ant_posts / total_posts
+```
+
+
+```{r}
+#2. Most common sentiment overall
+nrc_pt2 <- sentiments_nrc %>%
+  count(sentiment) %>%
+  arrange(-n)
+```
+
+Without taking the posts in to account, the overall sentiments were distributed as follows in Figure 2.2.
+
+
+```{r, include=TRUE}
+nrc_pt2 %>%
+  ggplot(aes(x = sentiment, y = n)) +
+  geom_col()+
+  ggtitle("Sentiment Count Overall") +
+  ylab("Number of words") +
+  xlab("Sentiment") +
+  ggthemes::theme_fivethirtyeight()
+```
+
+
+**AFINN: Numerical Analysis on Sentiment**
+For the Afinn sentiment analysis, I again split the body and found the rating of each of the words, but since these were numerical values, I was able to take all values into account in the form of the mean of all those ratings as the overall sentiment of the post.
+
+```{r}
+afinn <- get_sentiments("afinn")
+```
+
+```{r}
+sentiments_afinn <- words %>%
+  inner_join(afinn)
+sentiments_afinn <- rename(sentiments_afinn)
+```
+
+
+```{r}
+#1. Mean sentiment of each post (neg = negative emotion)
+afinn_pt1 <- sentiments_afinn %>%
+  group_by(post) %>%
+  summarise_at(vars(value), list(average_sent = mean))
+afinn_pt1
+```
+```{r}
+afinn_pt1 %>%
+  filter(average_sent > 0) %>%
+  count()
+```
+
+```{r}
+afinn_pt1 %>%
+  filter(average_sent < 0) %>%
+  count()
+```
+
+
+After performing the sentiment analysis, I found that there were 77 positive posts, 132 negative posts, and 16 neutral posts (with Afinn values of 0).
+After using both, I found that Afinn resulted in more accurate findings. NRC, perhaps due to the fact that we are only using the most common sentiment without any context, seemed to often mis the post’s sentiment. For example, while NRC accurately classified the following post as positive:
+```{r}
+nrc_pt1 %>%
+  full_join(data) %>%
+  filter(sentiment == "negative") %>%
+  select(Body) %>%
+  head(7) %>%
+  pull()
+#These posts seem frustrated and a little hopeless. I can see why they were classified as negative sentiments. THey seem to be accurate.
+```
+
+```{r}
+nrc_pt1 %>%
+  full_join(data) %>%
+  filter(sentiment == "positive") %>%
+  select(Body) %>%
+  head(7) %>%
+  pull()
+#The first post seems like a positive post. In fact, the redditor actually mentions they're happy and uses that word often. 
+#The other posts, however, seem to be more inquisitive or even some straight out negative (ex: "This is so hard and frustrating.  I’m a shadow of my former self.  Anyone else feel the same way?")
+#This is interesting to see because I can see why the algorithm classified these posts in the way they did, but the context is taken out when using this form of analysis so it makes sense that it was read wrong despite being somewhat accurate on an independent word basis.
+```
+
+```{r, include=TRUE, message=FALSE}
+nrc_pt1 %>%
+  full_join(data) %>%
+  filter(sentiment == "positive") %>%
+  select(Body) %>%
+  head(1) %>%
+  pull()
+```
+This would be an accurate classification as the author outwardly states that they are happy and hopeful. However, it also classified the following post as positive:
+
+```{r}
+v <- nrc_pt1 %>%
+  full_join(data) %>%
+  filter(sentiment == "positive") %>%
+  select(Body) %>%
+  head(7) %>%
+  pull()
+v[5]
+```
+
+This is a complete misclassification as the author outwardly states they are frustrated and insecure. However, due to the process in which the NRC sentiment was derived, it seemed to misconstrue the feelings conveyed.
+For these reasons, I will use Afinn results from here onward for summary findings and for future research.
+
+```{r}
+nrc_pt1 %>%
+  full_join(data) %>%
+  filter(sentiment == "anticipation") %>%
+  select(Body) %>%
+  head(5) %>%
+  pull()
+#I would actually classify the first one more as positive post, but there is also anticipation as the writer seems to be anticipating reaching their goal weight. I think that the algorithm still seems to work in this instance.The other posts seem to be more aligned with that emotion as they seem to be hoping to see something, or have a goal they anticipate on achieving.
+```
+
+
+```{r}
+nrc_pt1 %>%
+  full_join(data) %>%
+  filter(sentiment == "joy") %>%
+  select(Body) %>%
+  pull()
+#Based on he first post, compared to the positive seems a lot more happier. I would see positive as a more mellow happy and joy as more excitement. The second seems to be miss-classified, however. It looks more negative than joy. 
+```
+
+
+## Findings
+```{r}
+summary(sentiments_afinn$value)
+sd(sentiments_afinn$value)
+```
+
+The mean sentiment of all the posts was about -0.35 which was a slightly negative sentiment. The standard deviation of the sentiments was about 2.13, signaling a large spread of the sentiment values’ distribution. This indicates that there are a number of posts that are extremely positive and extremely negative.
+
+Based on my personal experience, I expected a significant portion of the posts to be negative. However, this was not the case, as we can see that there are many posts that turned out to be positive as well. Upon a second glance, this makes sense because there will be posts that talk about the author’s experience losing weight and what they did to do so. Also, losing weight can be a positive experience as for some, and therefore talking about it will convey a positive emotion. I was also surprised to see a number of posts that were completely neutral. But this also has its reasons since there are many posts on the reddit page that are more factual and not any sort of anecdote. Therefore, these 0 Afinn value posts reflect the posts that ask fact-based questions or share fact-based information.
+
+## Conclusion
+Despite seeing some variation in sentiment, most PCOS subreddit posts consistently convey negative sentiments about weight. This tells us that PCOS patients, at least those likely to use the internet as a hub for discussing their condition, have a negative experience with their weight associated with their diagnoses. Therefore, doctors need to be more sympathetic and willing to provide emotional or mental support when talking about weight and weight loss. (One such solution could be setting up mental health counseling or offering those services to women that receive a PCOS diagnosis.)
+
+
+
+
