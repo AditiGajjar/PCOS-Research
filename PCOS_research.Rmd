@@ -6,6 +6,7 @@ output:
   rmarkdown::html_document:
     theme: paper
 ---
+
 # Introduction
 The idea for the topic of this project came from a personal experience I had at the doctor’s office--being diagnosed with Polycystic Ovarian Syndrome (PCOS). 
 
@@ -13,13 +14,31 @@ When my doctor diagnosed me with PCOS, I was instructed to lose weight. Dealing 
 
 The internet has become a hub for sharing information and exchanging advice conveniently and anonymously. Forums such as Reddit provide a platform for people to share experiences and learn from others experiences. Using public posts on Reddit, I wanted to explore attitudes towards PCOS diagnoses, particularly pertaining to weight and body image, to gauge a need for better mental health support from medical professionals when diagnosing PCOS.
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, include = FALSE)
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE, 
+                      warning = FALSE)
 ```
 
-Data Story:
-The first step was to scrape the data from Reddit. To do this, I used the Reddit API, a safe, convenient, and legal method to extract data from the website. Note that each topic within Reddit is referred to as “subreddit,” which are usually linked to Reddit pages where members discuss and post within the realm of the topic. Within a subreddit, users can post using a tag, called a “flair,” to organize the categories of discussions that are relevant to each other. Using Python and guidance from this article, I was able to extract the posts that had a flair of “weight” within the PCOS subreddit. The rest of this research utilized R (2020).
+<!-- By specifying include = FALSE in the setup, some of your results were not appearing in the report! -->
 
-There were 248 posts total in the weight flair of the PCOS subreddit on January 21, 2022, and I was able to scrape all of them. The variables of interest I kept were ID (as opposed to a username for the account that posted), number of comments, the title of the post, the body or text of the post, a URL to the post, number of upvotes, the top comment, and the creation date. Upon an initial glance, it looked like many posts used emojis, SMS style-talk, and misspelling. However, given the large amount of working data I had, I chose to sacrifice the instances where those words would influence my final analysis. This reduced the size of my data from about 33,540 to 12,734 words.
+# Data Story
+
+To address my research question, the first step was to scrape data on PCOT experiences from Reddit. To do this, I used the Reddit API, a safe, convenient, and legal method to extract data from the website. Note that each topic within Reddit is referred to as “subreddit,” which are usually linked to Reddit pages where members discuss and post within the realm of the topic. Within a subreddit, users can post using a tag, called a “flair,” to organize the categories of discussions that are relevant to each other. Using Python and guidance from [this article](link to article here!), I was able to extract the posts that had a flair of “weight” within the PCOS subreddit. The rest of this research utilized R (2020).
+
+There were 248 posts total in the weight flair of the PCOS subreddit on January 21, 2022, and I was able to scrape all of them. The variables of interest I kept were:
+
+- ID (as opposed to a username for the account that posted)
+- number of comments
+- title of the post
+- body or text of the post
+- a URL to the post
+- number of upvotes
+- top comment
+- creation date
+
+Upon an initial glance, it looked like many posts used emojis, SMS style-talk, and misspellings. However, given the large amount of working data I had, I chose to sacrifice the instances where those words would influence my final analysis. This reduced the size of my data from about 33,540 to 12,734 words.
+
+<!-- When you say "about" are you calculating the exact difference between the two datasets, or are you approximating? -->
 
 ```{r}
 library (tidyverse)
@@ -29,6 +48,7 @@ library(tidytext)
 data <- read_csv(here("reddit_raw.csv")) %>%
   rename(post = X1)
 ```
+
 ## Data Exploration
 
 Once I imported the dataset into R, I needed to clean the data. To do this, I split the post’s body into separate words and removed the “stop words” or extra words that don’t convey any emotions. I used the R `stop_words` dataset and an `antijoin()` function to remove these words.
@@ -85,13 +105,12 @@ words <- df3 %>%
 
 For the actual sentiment analysis itself, there were two main lexicons I chose to explore: NRC (or Non-Commercial Research Use) and Afinn. The NRC lexicon based sentiment analysis resulted in exact sentiments in the form of words, such as “joy,” and “positive,” or “negative.” On the other hand, Afinn sentiment analysis results in a number system. Under Afinn, the more negative a word, the more negative the assigned value, and the more positive the number, the more positive the assigned value.
 
-**NRC: In-depth Look at Sentiment**
+### NRC: In-depth Look at Sentiment
 
 Quick look at the NRC dataset
 
 ```{r}
 nrc <- get_sentiments("nrc")
-DT::datatable(nrc)
 ```
 
 ```{r}
@@ -104,6 +123,7 @@ display_nrc <- sentiments_nrc %>%
 ```
 
 For the NRC sentiment analysis, I split the body of each of the posts and found the sentient of each separate word. It’s important to note that the algorithm applied every possible sentiment to a corresponding word, creating replicates of words used. After applying the NRC lexicon, my resulting dataset looked like:
+
 ```{r}
 #data preview
 DT::datatable(display_nrc)
@@ -119,7 +139,7 @@ nrc_pt1 <- sentiments_nrc %>%
 ```
 
 
-```{r, include=TRUE}
+```{r, include=TRUE, fig.cap = "Figure 2.1"}
 nrc_pt1 %>%
   count(sentiment) %>%
   ggplot(aes(sentiment)) +
@@ -130,7 +150,7 @@ nrc_pt1 %>%
   ggthemes::theme_fivethirtyeight()
 ```
 
-```{r}
+```{r, include = FALSE}
 neg_posts <- nrc_pt1 %>%
   filter(sentiment == "negative") %>%
   count() %>%
@@ -146,7 +166,7 @@ total_posts <-nrc_pt1 %>%
 neg_posts / total_posts
 ```
 
-```{r}
+```{r, include = FALSE}
 pos_posts <- nrc_pt1 %>%
   filter(sentiment == "positive") %>%
   count() %>%
@@ -156,7 +176,7 @@ pos_posts <- nrc_pt1 %>%
 pos_posts / total_posts
 ```
 
-```{r}
+```{r, include = FALSE}
 ant_posts <- nrc_pt1 %>%
   filter(sentiment == "anticipation") %>%
   count() %>%
@@ -177,7 +197,7 @@ nrc_pt2 <- sentiments_nrc %>%
 Without taking the posts in to account, the overall sentiments were distributed as follows in Figure 2.2.
 
 
-```{r, include=TRUE}
+```{r, fig.cap = "Figure 2.2"}
 nrc_pt2 %>%
   ggplot(aes(x = sentiment, y = n)) +
   geom_col()+
@@ -188,9 +208,10 @@ nrc_pt2 %>%
 ```
 
 
-**AFINN: Numerical Analysis on Sentiment**
+### AFINN: Numerical Analysis on Sentiment
 
 A quick look at the Afinn lexicon:
+
 ```{r, include=TRUE}
 # Afinn data preview
 afinn <- get_sentiments("afinn")
@@ -199,7 +220,7 @@ DT::datatable(afinn)
 
 For the Afinn sentiment analysis, I again split the body and found the rating of each of the words, but since these were numerical values, I was able to summarize these values with the mean to capture the overall sentiment of the post.
 
-```{r, include=TRUE}
+```{r}
 sentiments_afinn <- words %>%
   inner_join(afinn)
 sentiments_afinn <- rename(sentiments_afinn)
@@ -207,20 +228,21 @@ DT::datatable(sentiments_afinn)
 ```
 
 
-```{r}
+```{r, include = FALSE}
 #1. Mean sentiment of each post (neg = negative emotion)
 afinn_pt1 <- sentiments_afinn %>%
   group_by(post) %>%
   summarise_at(vars(value), list(average_sent = mean))
 afinn_pt1
 ```
-```{r}
+
+```{r, include = FALSE}
 afinn_pt1 %>%
   filter(average_sent > 0) %>%
   count()
 ```
 
-```{r}
+```{r, include = FALSE}
 afinn_pt1 %>%
   filter(average_sent < 0) %>%
   count()
@@ -229,8 +251,11 @@ afinn_pt1 %>%
 
 After performing the sentiment analysis, I found that there were 77 posts with positive means, 132 with negative means, and 16 with neutral means (with Afinn values of exactly 0).
 
+## Comparison of Afinn & NRC
+
 After using both, I found that Afinn resulted in more accurate findings. NRC, perhaps due to the fact that we are only using the most common sentiment without any context, seemed to often misrepresent the post’s sentiment. For example, while NRC accurately classified the following post as positive:
-```{r}
+
+```{r, include = FALSE}
 nrc_pt1 %>%
   full_join(data) %>%
   filter(sentiment == "negative") %>%
@@ -240,7 +265,7 @@ nrc_pt1 %>%
 #These posts seem frustrated and a little hopeless. I can see why they were classified as negative sentiments. THey seem to be accurate.
 ```
 
-```{r}
+```{r, include = FALSE}
 nrc_pt1 %>%
   full_join(data) %>%
   filter(sentiment == "positive") %>%
@@ -252,7 +277,7 @@ nrc_pt1 %>%
 #This is interesting to see because I can see why the algorithm classified these posts in the way they did, but the context is taken out when using this form of analysis so it makes sense that it was read wrong despite being somewhat accurate on an independent word basis.
 ```
 
-```{r, include=TRUE, message=FALSE}
+```{r}
 nrc_pt1 %>%
   full_join(data) %>%
   filter(sentiment == "positive") %>%
@@ -262,7 +287,7 @@ nrc_pt1 %>%
 ```
 This would be an accurate classification as the author outwardly states that they are happy and hopeful. However, it also classified the following post as positive:
 
-```{r}
+```{r, include = FALSE}
 v <- nrc_pt1 %>%
   full_join(data) %>%
   filter(sentiment == "positive") %>%
@@ -275,7 +300,7 @@ v[5]
 This is a complete misclassification as the author outwardly states they are frustrated and insecure. However, due to the process in which the NRC sentiment was derived, it seemed to misconstrue the feelings conveyed.
 For these reasons, I will use Afinn results from here onward for summary findings and for future research.
 
-```{r}
+```{r, include = FALSE}
 nrc_pt1 %>%
   full_join(data) %>%
   filter(sentiment == "anticipation") %>%
@@ -286,7 +311,7 @@ nrc_pt1 %>%
 ```
 
 
-```{r}
+```{r, include = FALSE}
 nrc_pt1 %>%
   full_join(data) %>%
   filter(sentiment == "joy") %>%
@@ -297,14 +322,11 @@ nrc_pt1 %>%
 
 
 ## Findings
-```{r}
-summary(sentiments_afinn$value)
-sd(sentiments_afinn$value)
-# Plot of the histogram
-# "consistently" is only if skewed right
-```
 
-The mean sentiment of all the posts was about -0.35 which was a slightly negative sentiment. The standard deviation of the sentiments was about 2.13, signaling a large spread of the sentiment values’ distribution. This indicates that there are a number of posts that are extremely positive and extremely negative.
+The mean sentiment of all the posts was `r mean(sentiments_afinn$value)` which was a slightly negative sentiment. The standard deviation of the sentiments was about `r sd(sentiments_afinn$value)`, signaling a large spread of the sentiment values’ distribution. This indicates that there are a number of posts that are extremely positive and extremely negative.
+
+<!-- A histogram of Afinn values would be great here! -->
+<!-- # "consistently" is only if skewed right -->
 
 Based on my personal experience, I expected a significant portion of the posts to be negative. However, this was not the case, as we can see that there are many posts that turned out to be positive as well. Upon a second glance, this makes sense because there will be posts that talk about the author’s experience losing weight and what they did to do so. Also, losing weight can be a positive experience as for some, and therefore talking about it will convey a positive emotion. I was also surprised to see a number of posts that were completely neutral. But this also has its reasons since there are many posts on the reddit page that are more factual and not any sort of anecdote, and it is possible to have a post that display both discontent and happiness. Therefore, these 0 Afinn value posts reflect the posts that ask fact-based questions or share fact-based information.
 
@@ -318,10 +340,11 @@ x[3]
 ```
 
 ## Conclusion
+
 Despite seeing some variation in sentiment, most PCOS subreddit posts consistently convey negative sentiments about weight. This tells us that PCOS patients, at least those likely to use the internet as a hub for discussing their condition, have a negative experience with their weight associated with their diagnoses. Therefore, doctors need to be more sympathetic and willing to provide emotional or mental support when talking about weight and weight loss. (One such solution could be setting up mental health counseling or offering those services to women that receive a PCOS diagnosis.)
 
 
-Citations
+## Citations
+
 R Core Team (2020). R: A language and environment for statistical computing. R Foundation for Statistical
   Computing, Vienna, Austria. URL https://www.R-project.org/.
-
