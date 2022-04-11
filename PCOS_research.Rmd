@@ -5,6 +5,7 @@ date: "1/27/2022"
 output:
   rmarkdown::html_document:
     theme: paper
+    fig_caption: yes
 ---
 
 # Introduction
@@ -23,7 +24,7 @@ knitr::opts_chunk$set(echo = FALSE,
 
 # Data Story
 
-To address my research question, the first step was to scrape data on PCOT experiences from Reddit. To do this, I used the Reddit API, a safe, convenient, and legal method to extract data from the website. Note that each topic within Reddit is referred to as “subreddit,” which are usually linked to Reddit pages where members discuss and post within the realm of the topic. Within a subreddit, users can post using a tag, called a “flair,” to organize the categories of discussions that are relevant to each other. Using Python and guidance from [this article](link to article here!), I was able to extract the posts that had a flair of “weight” within the PCOS subreddit. The rest of this research utilized R (2020).
+To address my research question, the first step was to scrape data on PCOS experiences from Reddit. To do this, I used the Reddit API, a safe, convenient, and legal method to extract data from the website. Note that each topic within Reddit is referred to as “subreddit,” which are usually linked to Reddit pages where members discuss and post within the realm of the topic. Within a subreddit, users can post using a tag, called a “flair,” to organize the categories of discussions that are relevant to each other. Using Python and guidance from [this article](link to article here!), I was able to extract the posts that had a flair of “weight” within the PCOS subreddit. The rest of this research utilized R (2020).
 
 There were 248 posts total in the weight flair of the PCOS subreddit on January 21, 2022, and I was able to scrape all of them. The variables of interest I kept were:
 
@@ -36,9 +37,8 @@ There were 248 posts total in the weight flair of the PCOS subreddit on January 
 - top comment
 - creation date
 
-Upon an initial glance, it looked like many posts used emojis, SMS style-talk, and misspellings. However, given the large amount of working data I had, I chose to sacrifice the instances where those words would influence my final analysis. This reduced the size of my data from about 33,540 to 12,734 words.
+Upon an initial glance, it looked like many posts used emojis, SMS style-talk, and misspellings. However, given the large amount of working data I had, I chose to sacrifice the instances where those words would influence my final analysis. This reduced the size of my data from 33,540 to 12,734 words.
 
-<!-- When you say "about" are you calculating the exact difference between the two datasets, or are you approximating? -->
 
 ```{r}
 library (tidyverse)
@@ -122,12 +122,13 @@ display_nrc <- sentiments_nrc %>%
 #Note: it seems to assign multiple emotions to one word; also, "eat" is always positive
 ```
 
-For the NRC sentiment analysis, I split the body of each of the posts and found the sentient of each separate word. It’s important to note that the algorithm applied every possible sentiment to a corresponding word, creating replicates of words used. After applying the NRC lexicon, my resulting dataset looked like:
+For the NRC sentiment analysis, I split the body of each of the posts and found the sentient of each separate word. It’s important to note that the algorithm applied every possible sentiment to a corresponding word, creating replicates of words used. After applying the NRC lexicon, my resulting dataset is as follows in Table 2.1.
 
-```{r}
+```{r, fig.cap="Table 2.1"}
 #data preview
 DT::datatable(display_nrc)
 ```
+
 
 After finding separate sentiments, I grouped by the post number and then found the most common sentiment and summarized that as the overall sentiment of the post (Figure 2.1). For all the posts, the most common sentiments were positive and negative with 33% positive and 38% negative.
 
@@ -212,7 +213,7 @@ nrc_pt2 %>%
 
 A quick look at the Afinn lexicon:
 
-```{r, include=TRUE}
+```{r, include=TRUE, fig.cap = "Table 3.1"}
 # Afinn data preview
 afinn <- get_sentiments("afinn")
 DT::datatable(afinn)
@@ -220,7 +221,7 @@ DT::datatable(afinn)
 
 For the Afinn sentiment analysis, I again split the body and found the rating of each of the words, but since these were numerical values, I was able to summarize these values with the mean to capture the overall sentiment of the post.
 
-```{r}
+```{r, fig.cap = "Table 3.2"}
 sentiments_afinn <- words %>%
   inner_join(afinn)
 sentiments_afinn <- rename(sentiments_afinn)
@@ -325,8 +326,16 @@ nrc_pt1 %>%
 
 The mean sentiment of all the posts was `r mean(sentiments_afinn$value)` which was a slightly negative sentiment. The standard deviation of the sentiments was about `r sd(sentiments_afinn$value)`, signaling a large spread of the sentiment values’ distribution. This indicates that there are a number of posts that are extremely positive and extremely negative.
 
-<!-- A histogram of Afinn values would be great here! -->
-<!-- # "consistently" is only if skewed right -->
+
+```{r, fig.cap = "Figure 5.1"}
+afinn_pt1 %>%
+  ggplot(aes(average_sent)) +
+  geom_histogram(bins = 15)+
+  ggtitle("Average Sentiments for Posts") +
+  ggthemes::theme_fivethirtyeight()
+```
+
+
 
 Based on my personal experience, I expected a significant portion of the posts to be negative. However, this was not the case, as we can see that there are many posts that turned out to be positive as well. Upon a second glance, this makes sense because there will be posts that talk about the author’s experience losing weight and what they did to do so. Also, losing weight can be a positive experience as for some, and therefore talking about it will convey a positive emotion. I was also surprised to see a number of posts that were completely neutral. But this also has its reasons since there are many posts on the reddit page that are more factual and not any sort of anecdote, and it is possible to have a post that display both discontent and happiness. Therefore, these 0 Afinn value posts reflect the posts that ask fact-based questions or share fact-based information.
 
