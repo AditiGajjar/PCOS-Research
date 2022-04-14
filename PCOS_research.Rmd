@@ -45,8 +45,10 @@ library (tidyverse)
 library(here)
 library(tm)
 library(tidytext)
+library(textdata)
+
 data <- read_csv(here("reddit_raw.csv")) %>%
-  rename(post = X1)
+  rename(post = ...1)
 ```
 
 ## Data Exploration
@@ -130,7 +132,9 @@ DT::datatable(display_nrc)
 ```
 
 
-After finding separate sentiments, I grouped by the post number and then found the most common sentiment and summarized that as the overall sentiment of the post (Figure 2.1). For all the posts, the most common sentiments were positive and negative with 33% positive and 38% negative.
+After finding separate sentiments, I grouped by the post number and then found the most common sentiment and summarized that as the overall sentiment of the post (Figure 2.1). For all the posts, the most common sentiments were positive and negative with X% positive and Y% negative.
+
+<!-- If you look at the plot, positive is nearly 75% and negative is over 75%, so these are definitely not 38% and 33%!  -->
 
 ```{r}
 nrc_pt1 <- sentiments_nrc %>%
@@ -139,6 +143,8 @@ nrc_pt1 <- sentiments_nrc %>%
   slice(which.max(n))
 ```
 
+<!-- Your axis labels don't appear in your final plot! I believe this is due to your -->
+<!-- fivethirtyeight theme, so I would recommend you choose another theme!  -->
 
 ```{r, include=TRUE, fig.cap = "Figure 2.1"}
 nrc_pt1 %>%
@@ -195,16 +201,22 @@ nrc_pt2 <- sentiments_nrc %>%
   arrange(-n)
 ```
 
-Without taking the posts in to account, the overall sentiments were distributed as follows in Figure 2.2.
+Without taking the posts in to account, the overall sentiments were distributed as follows in Figure 2.2. As a reminder, each word could have multiple associated
+sentiments. Thus, the y-axis here is not reflective of the number of posts, but
+rather the number of words classified under each sentiment, where a word can 
+appear in multiple bars. 
 
+<!-- Your axis labels don't appear in your final plot! I believe this is due to your -->
+<!-- fivethirtyeight theme, so I would recommend you choose another theme!  -->
 
 ```{r, fig.cap = "Figure 2.2"}
 nrc_pt2 %>%
   ggplot(aes(x = sentiment, y = n)) +
   geom_col()+
   ggtitle("Sentiment Count Overall") +
-  ylab("Number of words") +
-  xlab("Sentiment") +
+  labs(y = "Number of words", 
+       x = "Sentiment"
+       ) +
   ggthemes::theme_fivethirtyeight()
 ```
 
@@ -324,18 +336,20 @@ nrc_pt1 %>%
 
 ## Findings
 
-The mean sentiment of all the posts was `r mean(sentiments_afinn$value)` which was a slightly negative sentiment. The standard deviation of the sentiments was about `r sd(sentiments_afinn$value)`, signaling a large spread of the sentiment values’ distribution. This indicates that there are a number of posts that are extremely positive and extremely negative.
-
+The mean sentiment of all the posts was 
+`r round(mean(sentiments_afinn$value), 3)` which was a slightly negative 
+sentiment. The standard deviation of the sentiments was about 
+`r round(sd(sentiments_afinn$value), 3)`, signaling a large spread of the
+sentiment values’ distribution. This indicates that there are a number of posts
+that are extremely positive and extremely negative.
 
 ```{r, fig.cap = "Figure 5.1"}
 afinn_pt1 %>%
   ggplot(aes(average_sent)) +
-  geom_histogram(bins = 15)+
+  geom_histogram(binwidth = 0.6)+
   ggtitle("Average Sentiments for Posts") +
   ggthemes::theme_fivethirtyeight()
 ```
-
-
 
 Based on my personal experience, I expected a significant portion of the posts to be negative. However, this was not the case, as we can see that there are many posts that turned out to be positive as well. Upon a second glance, this makes sense because there will be posts that talk about the author’s experience losing weight and what they did to do so. Also, losing weight can be a positive experience as for some, and therefore talking about it will convey a positive emotion. I was also surprised to see a number of posts that were completely neutral. But this also has its reasons since there are many posts on the reddit page that are more factual and not any sort of anecdote, and it is possible to have a post that display both discontent and happiness. Therefore, these 0 Afinn value posts reflect the posts that ask fact-based questions or share fact-based information.
 
