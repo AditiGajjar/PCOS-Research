@@ -133,7 +133,7 @@ DT::datatable(display_nrc)
 
 After finding separate sentiments, I grouped by the post number and then found the most common sentiment and summarized that as the overall sentiment of the post (Figure 2.1). For all the posts, the most common sentiments were positive and negative with 38% positive and 33% negative.
 
-<!-- If you look at the plot, positive is nearly 75% and negative is over 75%, so these are definitely not 38% and 33%!  -->
+
 
 ```{r}
 nrc_pt1 <- sentiments_nrc %>%
@@ -142,8 +142,6 @@ nrc_pt1 <- sentiments_nrc %>%
   slice(which.max(n))
 ```
 
-<!-- Your axis labels don't appear in your final plot! I believe this is due to your -->
-<!-- fivethirtyeight theme, so I would recommend you choose another theme!  -->
 
 ```{r, include=TRUE, fig.cap = "Figure 2.1"}
 nrc_pt1 %>%
@@ -210,8 +208,6 @@ sentiments. Thus, the y-axis here is not reflective of the number of posts, but
 rather the number of words classified under each sentiment, where a word can 
 appear in multiple bars. 
 
-<!-- Your axis labels don't appear in your final plot! I believe this is due to your -->
-<!-- fivethirtyeight theme, so I would recommend you choose another theme!  -->
 
 ```{r, fig.cap = "Figure 2.2"}
 nrc_pt2 %>%
