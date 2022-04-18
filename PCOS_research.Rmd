@@ -20,7 +20,6 @@ knitr::opts_chunk$set(echo = FALSE,
                       warning = FALSE)
 ```
 
-<!-- By specifying include = FALSE in the setup, some of your results were not appearing in the report! -->
 
 # Data Story
 
@@ -132,7 +131,7 @@ DT::datatable(display_nrc)
 ```
 
 
-After finding separate sentiments, I grouped by the post number and then found the most common sentiment and summarized that as the overall sentiment of the post (Figure 2.1). For all the posts, the most common sentiments were positive and negative with X% positive and Y% negative.
+After finding separate sentiments, I grouped by the post number and then found the most common sentiment and summarized that as the overall sentiment of the post (Figure 2.1). For all the posts, the most common sentiments were positive and negative with 38% positive and 33% negative.
 
 <!-- If you look at the plot, positive is nearly 75% and negative is over 75%, so these are definitely not 38% and 33%!  -->
 
@@ -154,7 +153,7 @@ nrc_pt1 %>%
   ggtitle("Sentiment Count by Post", subtitle = "Represents most common sentiment per post") +
   ylab("Number of posts") +
   xlab("Sentiment") +
-  ggthemes::theme_fivethirtyeight()
+  ggthemes::theme_calc()
 ```
 
 ```{r, include = FALSE}
@@ -168,10 +167,12 @@ total_posts <-nrc_pt1 %>%
   count() %>%
   pull() %>%
   sum()
+```
 
-
+```{r, include = FALSE}
 neg_posts / total_posts
 ```
+
 
 ```{r, include = FALSE}
 pos_posts <- nrc_pt1 %>%
@@ -179,9 +180,12 @@ pos_posts <- nrc_pt1 %>%
   count() %>%
   pull() %>%
   sum()
+```
 
+```{r, include = FALSE}
 pos_posts / total_posts
 ```
+
 
 ```{r, include = FALSE}
 ant_posts <- nrc_pt1 %>%
@@ -217,7 +221,7 @@ nrc_pt2 %>%
   labs(y = "Number of words", 
        x = "Sentiment"
        ) +
-  ggthemes::theme_fivethirtyeight()
+  ggthemes::theme_calc()
 ```
 
 
@@ -348,7 +352,9 @@ afinn_pt1 %>%
   ggplot(aes(average_sent)) +
   geom_histogram(binwidth = 0.6)+
   ggtitle("Average Sentiments for Posts") +
-  ggthemes::theme_fivethirtyeight()
+  xlab("Average Sentiment") +
+  ylab("Count") +
+  ggthemes::theme_calc()
 ```
 
 Based on my personal experience, I expected a significant portion of the posts to be negative. However, this was not the case, as we can see that there are many posts that turned out to be positive as well. Upon a second glance, this makes sense because there will be posts that talk about the author’s experience losing weight and what they did to do so. Also, losing weight can be a positive experience as for some, and therefore talking about it will convey a positive emotion. I was also surprised to see a number of posts that were completely neutral. But this also has its reasons since there are many posts on the reddit page that are more factual and not any sort of anecdote, and it is possible to have a post that display both discontent and happiness. Therefore, these 0 Afinn value posts reflect the posts that ask fact-based questions or share fact-based information.
